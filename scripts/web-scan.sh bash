@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# KALI-ELITE - Web Application Scan
+# Usage: ./web-scan.sh <url>
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_DIR/colors.sh"
+
+URL="$1"
+[ -z "$URL" ] && read -p "$(echo -e ${Y}"[?] Target URL: "${N})" URL
+[ -z "$URL" ] && { error "URL required!"; exit 1; }
+
+DOMAIN=$(echo "$URL" | sed 's|https\?://||' | sed 's|/.*$||')
+REPORT_DIR="$HOME/kali-elite/reports/web_scan_${DOMAIN}_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$REPORT_DIR"
+
+clear
+echo -e "${B}"
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║        🌐 KALI-ELITE WEB APPLICATION SCAN 🌐           ║"
+echo "╚══════════════════════════════════════════════════════════╝"
+echo -e "${N}"
+echo -e "  ${C}URL:${N}   ${Y}${URL}${N}"
+echo -e "  ${C}Domain:${N} ${Y}${DOMAIN}${N}"
+echo ""
+
+# 1. WhatWeb
+echo -e "${R}[${Y}1/6${R}]${N} ${B}WhatWeb - Technology detection...${N}"
+whatweb "$URL" -v > "$REPORT_DIR/01_whatweb.txt" 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+# 2. Nikto
+echo -e "${R}[${Y}2/6${R}]${N} ${B}Nikto - Web server scan...${N}"
+nikto -h "$URL" -o "$REPORT_DIR/02_nikto.txt" 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+# 3. Gobuster
+echo -e "${R}[${Y}3/6${R}]${N} ${B}Gobuster - Directory enumeration...${N}"
+gobuster dir -u "$URL" -w /usr/share/wordlists/dirb/common.txt -o "$REPORT_DIR/03_gobuster.txt" -t 50 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+# 4. Nuclei
+echo -e "${R}[${Y}4/6${R}]${N} ${B}Nuclei - Vulnerability templates...${N}"
+nuclei -u "$URL" -severity medium,high,critical -o "$REPORT_DIR/04_nuclei.txt" 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+# 5. SQLMap
+echo -e "${R}[${Y}5/6${R}]${N} ${B}SQLMap - SQL injection test...${N}"
+sqlmap -u "$URL" --batch --crawl=1 --level=1 --risk=1 --output-dir="$REPORT_DIR/05_sqlmap" 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+# 6. Wapiti
+echo -e "${R}[${Y}6/6${R}]${N} ${B}Wapiti - Vulnerability scanner...${N}"
+wapiti -u "$URL" -o "$REPORT_DIR/06_wapiti" 2>/dev/null
+echo -e "  ${G}✓${N}"
+
+success "Web scan complete! Reports: $REPORT_DIR"
